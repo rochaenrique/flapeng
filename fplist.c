@@ -7,37 +7,46 @@ void fp_switch(FP_Any a, FP_Any b)
   b = temp;
 }
 
-FP_Node* fp_node_alloc()
+FP_Node *fp_node_alloc()
 {
-  return (FP_Node *)FP_MALLOC(sizeof(FP_Node *));
+  FP_Node *p;
+  if ((p = (FP_Node *)FP_MALLOC(sizeof(FP_Node *))))
+	p->next = p->this = NULL;
+  
+  return p;
 }
 
-FP_List* fp_list_alloc()
+FP_List *fp_list_alloc()
 {
-  return (FP_List *)FP_MALLOC(sizeof(FP_List *));
+  FP_List *list;
+  if ((list = (FP_List *)FP_MALLOC(sizeof(FP_List *)))) 
+	list->tail = list->head = NULL;
+  
+  return list;
 }
 
-void fp_node_free(FP_List *list)
+void fp_list_free(FP_List *list)
 {
   FP_Node *p, *q;
   for (p = list->head; p; p = q) {
 	q = p->next;
 	FP_FREE(p);
   }
+  FP_FREE(list);
 }
 
 FP_Node *fp_list_append(FP_List *list, FP_Node* node)
 {
   if (list->tail) 
 	list->tail->next = node;
-  else if (list->head) 
+  else if (list->head)
 	list->head->next = node;
-  else {
-	node->next = NULL;
+  else 
 	return list->head = node;
-  }
-  
-  return list->tail = node;
+
+  list->tail = node;
+  list->tail->next = NULL;
+  return list->tail;
 }
 
 FP_Node *fp_list_create_append(FP_List *list)
@@ -73,23 +82,27 @@ FP_Node *fp_list_find(FP_List *list, FP_Any el)
   return p;
 }
 
-FP_Node *fp_list_find_pre(FP_List *list, FP_Any el)
+FP_Node *_fp_list_find_pair(FP_List *list, FP_Any el, FP_Node **pre)
 {
-  FP_Node *p = list->head;
-  if (p->this != el)
-	for (; p && p->next && p->next->this != el; p = p->next);
-
+  FP_Node *p;
+  if ((p = list->head)->this == el) 
+	*pre = NULL;
+  else 
+	for (p = p->next; p && p->this != el; p = p->next)
+	  *pre = p;
   return p;
 }
 
 
 FP_Node *fp_list_remove(FP_List *list, FP_Any el)
 {
-  FP_Node *p, *q;
-  if (p = fp_list_find_pre(list, el)) {
-	q = p->next;
-	p->next = p->next->next;
-	return q;
+  FP_Node *found, *pre;
+  if ((found = _fp_list_find_pair(list, el, &pre))) {
+	if (!pre)
+	  list->head = found->next;
+	else
+	  pre->next = found->next;
+	return found;
   }
   return NULL;
 }
@@ -98,7 +111,7 @@ int fp_list_delete(FP_List *list, FP_Any el)
 {
   int a;
   FP_Node *p;
-  if (a = ((p = fp_list_remove(list, el)) != NULL)) 
+  if ((a = ((p = fp_list_remove(list, el))) != NULL)) 
 	FP_FREE(p);
 
   return a;
@@ -113,6 +126,12 @@ FP_Node *fp_list_replace(FP_List *list, FP_Any from, FP_Any to)
   return p;
 }
 
+FP_Node *fp_list_rotate(FP_List *list)
+{
+ FP_Node *p;
+  return (p = fp_list_remove(list, list->head->this)) ? fp_list_append(list, p) : NULL;
+}
+
 void fp_node_print(FP_Node *p)
 {
   if (p) 
@@ -120,7 +139,6 @@ void fp_node_print(FP_Node *p)
   else
 	printf("%p {}\n", p);
 }
-
 
 void fp_list_print(FP_List *list)
 {

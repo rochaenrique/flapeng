@@ -1,7 +1,7 @@
 #ifndef FPLIST_H_
 #define FPLIST_H_
 
-#if !fp_node_alloc && !FP_FREE
+#if !(fp_node_alloc && FP_FREE)
 #include <stdlib.h>
 #endif
 
@@ -65,6 +65,9 @@ int fp_list_delete(FP_List *, FP_Any);
 
 /* Replaces the node with corresponding element and returns the pointer to new node, NULL if the element was not found */
 FP_Node *fp_list_replace(FP_List *, FP_Any, FP_Any);
+
+/* Rotates the list, meaning, the head is moved to after the tail. Returns a pointer to the new tail. */
+FP_Node *fp_list_rotate(FP_List *);
 
 /* Prints the node to stdout */
 void fp_node_print(FP_Node *);
